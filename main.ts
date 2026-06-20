@@ -543,6 +543,14 @@ async function autoLoginFlomo(): Promise<string | null> {
           cleanup();
           return;
         }
+        try {
+          const url = win.webContents.getURL();
+          if (url && url.includes('/login')) {
+            return;
+          }
+        } catch (e) {
+          // getURL might throw if window is destroyed or in an unstable state, ignore
+        }
         win.webContents.executeJavaScript(extractTokenScript)
           .then((token: string | null) => {
             if (token && token.length > 10 && !resolved) {
