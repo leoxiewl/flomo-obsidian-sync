@@ -1,7 +1,7 @@
 {
   "name": "flomo-sync",
-  "version": "1.0.2",
-  "description": "Lightweight Flomo to Obsidian sync via API",
+  "version": "1.1.0",
+  "description": "Lightweight Flomo to Obsidian sync via API with tag-based or date-based folders",
   "main": "main.js",
   "scripts": {
     "build": "node esbuild.config.mjs production",

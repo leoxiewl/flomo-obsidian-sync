@@ -1,12 +1,12 @@
 # Flomo Sync — Obsidian Plugin
 
-Sync your [Flomo](https://flomoapp.com) memos to Obsidian. Auto-login, tag-based folders, incremental updates.
+Sync your [Flomo](https://flomoapp.com) memos to Obsidian. Auto-login, tag-based or date-based folders, incremental updates.
 
 ## Features
 
 - **One-click login**: Log in to Flomo directly from Obsidian — no manual token copying
 - **Full sync**: Fetches all your Flomo memos and converts them to Markdown
-- **Tag-based folders**: Memos are organized into folders matching your Flomo tag hierarchy
+- **Flexible folder organization**: Organize memos by Flomo tags (default) or by creation date in a `YYYY/MM/DD` hierarchy
 - **Incremental updates**: Detects new, updated, and deleted memos
 - **Auto sync**: Optional sync on startup + configurable interval
 - **HTML → Markdown**: Converts rich text (bold, italic, highlights, blockquotes, lists, images) to clean Markdown
@@ -26,7 +26,22 @@ Flomo → Login → Fetch all memos → Convert HTML to Markdown → Write to va
                                                             └── ...
 ```
 
-Each memo becomes a Markdown file named by its creation timestamp. Files are organized into folders based on your Flomo tags. A memo with multiple tags is copied to all matching folders.
+Each memo becomes a Markdown file named by its creation timestamp. By default, files are organized into folders based on your Flomo tags. A memo with multiple tags is copied to all matching folders.
+
+With **By creation date (YYYY/MM/DD)** enabled, memos are instead stored in a date-based hierarchy under the root folder:
+
+```
+flomo/
+├── 2026/
+│   ├── 05/
+│   │   ├── 01/
+│   │   │   ├── 2026-05-01_07-59-23.md
+│   │   │   └── 2026-05-01_08-12-41.md
+│   │   └── 02/
+│   │       └── 2026-05-02_09-15-21.md
+```
+
+Date mode stores each memo in exactly one file. Flomo tags are still preserved in YAML frontmatter and in the memo content, but they do not affect the physical file path. Untagged and tagged memos are treated the same way.
 
 ## Installation
 
@@ -68,6 +83,7 @@ Then copy `main.js`, `manifest.json`, and `styles.css` to your vault's `.obsidia
 | Setting | Default | Description |
 |---------|---------|-------------|
 | Flomo Folder | `flomo` | Root folder in your vault for synced memos |
+| Folder Organization | By Flomo tags | `By Flomo tags` (current behavior) or `By creation date (YYYY/MM/DD)` |
 | Sync on Startup | Off | Auto-sync when Obsidian opens |
 | Sync Interval | 60 min | How often to auto-sync (0 = disabled) |
 

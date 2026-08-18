@@ -53,6 +53,7 @@ interface SyncedMemoRecord {
 interface FlomoSyncSettings {
   bearerToken: string;
   flomoFolder: string;
+  folderOrganization: 'tags' | 'date';
   autoSyncOnStartup: boolean;
   autoSyncIntervalMinutes: number;
   lastSyncTime: number;
@@ -65,6 +66,7 @@ interface FlomoSyncSettings {
 const DEFAULT_SETTINGS: FlomoSyncSettings = {
   bearerToken: '',
   flomoFolder: 'flomo',
+  folderOrganization: 'tags',
   autoSyncOnStartup: false,
   autoSyncIntervalMinutes: 60,
   lastSyncTime: 0,
@@ -240,9 +242,33 @@ function memoFileName(memo: FlomoMemo): string {
   return memo.created_at.replace(/\s/g, '_').replace(/:/g, '-');
 }
 
+function memoDateFolder(memo: FlomoMemo): { year: string; month: string; day: string } | null {
+  const match = memo.created_at.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (match) {
+    return { year: match[1], month: match[2], day: match[3] };
+  }
+  return null;
+}
+
+function samePaths(a: string[], b: string[]): boolean {
+  if (a.length !== b.length) return false;
+  const aSet = new Set(a);
+  return b.every(path => aSet.has(path));
+}
+
 /** Compute which file paths a memo should be stored at */
-function computeFilePaths(base: string, memo: FlomoMemo): string[] {
+function computeFilePaths(base: string, memo: FlomoMemo, folderOrganization: 'tags' | 'date'): string[] {
   const fileName = memoFileName(memo);
+
+  if (folderOrganization === 'date') {
+    const dateFolder = memoDateFolder(memo);
+    if (dateFolder) {
+      const { year, month, day } = dateFolder;
+      return [`${base}/${year}/${month}/${day}/${fileName}.md`];
+    }
+    return [`${base}/_untagged/${fileName}.md`];
+  }
+
   const tags = extractTags(memo);
 
   if (tags.length === 0) {
@@ -298,7 +324,7 @@ async function syncToVault(
   // ── Step 1: Process memos from API (new + updated) ──
   for (const memo of memos) {
     const existing = syncedMemos[memo.slug];
-    const filePaths = computeFilePaths(base, memo);
+    const filePaths = computeFilePaths(base, memo, settings.folderOrganization);
     const fileName = memoFileName(memo);
 
     if (!existing) {
@@ -310,9 +336,9 @@ async function syncToVault(
         filePaths,
       };
       newCount++;
-    } else if (existing.updated_at !== memo.updated_at) {
+    } else if (existing.updated_at !== memo.updated_at || !samePaths(existing.filePaths, filePaths)) {
       // UPDATED memo — delete old files, write new ones
-      // (tags might have changed → different folders)
+      // (tags or folder organization might have changed → different folders)
       await deleteMemoFiles(app, existing);
       await writeMemo(app, memo, filePaths);
       syncedMemos[memo.slug] = {
@@ -636,13 +662,28 @@ class FlomoSyncSettingTab extends PluginSettingTab {
 
     new Setting(containerEl)
       .setName('Flomo folder')
-      .setDesc('Memos are saved into tag-based subfolders under this root folder')
+      .setDesc(this.plugin.settings.folderOrganization === 'date'
+        ? 'Memos are saved into YYYY/MM/DD subfolders under this root folder'
+        : 'Memos are saved into tag-based subfolders under this root folder')
       .addText(text => text
         .setPlaceholder('Folder name')
         .setValue(this.plugin.settings.flomoFolder)
         .onChange(async (value) => {
           this.plugin.settings.flomoFolder = value || 'flomo';
           await this.plugin.saveSettings();
+        }));
+
+    new Setting(containerEl)
+      .setName('Folder organization')
+      .setDesc('By creation date stores each memo once under YYYY/MM/DD and keeps tags as metadata')
+      .addDropdown(dropdown => dropdown
+        .addOption('tags', 'By Flomo tags (default)')
+        .addOption('date', 'By creation date (YYYY/MM/DD)')
+        .setValue(this.plugin.settings.folderOrganization)
+        .onChange(async (value) => {
+          this.plugin.settings.folderOrganization = value as 'tags' | 'date';
+          await this.plugin.saveSettings();
+          this.display();
         }));
 
     new Setting(containerEl).setName('Auto sync').setHeading();
