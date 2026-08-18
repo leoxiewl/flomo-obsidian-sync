@@ -69,6 +69,15 @@ npm run build
 
 Then copy `main.js`, `manifest.json`, and `styles.css` to your vault's `.obsidian/plugins/flomo-sync/` directory.
 
+## Testing
+
+```bash
+npm install
+npm test
+```
+
+Tests cover tag-based and date-based folder paths, frontmatter output, and incremental sync migration/deletion.
+
 ## Setup
 
 1. Open plugin settings

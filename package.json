@@ -5,7 +5,8 @@
   "main": "main.js",
   "scripts": {
     "build": "node esbuild.config.mjs production",
-    "dev": "node esbuild.config.mjs"
+    "dev": "node esbuild.config.mjs",
+    "test": "node tests/build-tests.mjs && node --test tests/dist/main.test.cjs"
   },
   "devDependencies": {
     "@types/node": "^16.11.6",
